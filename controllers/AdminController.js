@@ -1606,6 +1606,94 @@ module.exports = {
     }
   },
 
+  exRecycleLabel: async (req, res) => {
+    try {
+
+       const API_KEY = req.headers["x-api-key"];
+      // check if the api key is valid
+      if (API_KEY !== env.API_KEY) {
+        return helpers.createResponse(
+          res,
+          constants.UNAUTHORIZED,
+          messages.UNAUTHORIZED,
+          {}
+        );
+      }
+      var labelId = req.body.id;
+
+      // check if label exists
+      var label = await Label.findOne({
+        where: {
+          id: labelId,
+        },
+      });
+
+      if (!label) {
+        return helpers.createResponse(
+          res,
+          constants.NOT_FOUND,
+          messages.MODULE_NOT_FOUND("Label"),
+          {}
+        );
+      }
+
+      var barcode = await BarCode.findOne({
+        where: {
+          id: label.barcodeId,
+        },
+      });
+
+      // delete label
+      await Label.destroy({
+        where: {
+          id: labelId,
+        },
+      });
+
+      // update barcode
+      if (barcode)
+        await BarCode.update(
+          {
+            used: false,
+            status: "good",
+          },
+          {
+            where: {
+              id: barcode.id,
+            },
+          }
+        );
+      else
+        await BarCode.create({
+          ocrCode: label.barcodeOCR,
+          barcode: "/",
+          type: label.type,
+          admin: adminId,
+          adminName: admin.username,
+          adminEmail: admin.email,
+          used: false,
+          status: "good",
+        });
+
+      return helpers.createResponse(
+        res,
+        constants.SUCCESS,
+        messages.MODULE_STATUS_CHANGE("Label", "recycled"),
+        {}
+      );
+    } catch (err) {
+      console.log(err);
+      return helpers.createResponse(
+        res,
+        constants.SERVER_ERROR,
+        messages.SERVER_ERROR,
+        {
+          error: err.message,
+        }
+      );
+    }
+  },
+
   // recycle label
   recycleLabel: async (req, res) => {
     try {

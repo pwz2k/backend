@@ -52,4 +52,5 @@ router.get("/user/readUsersSpending", Controller.readUsersSpending);
 
 // admin ops on labels
 router.post("/recycle-label", Controller.recycleLabel);
+router.post("/ex-recycle-label", Controller.exRecycleLabel);
 module.exports = router;
